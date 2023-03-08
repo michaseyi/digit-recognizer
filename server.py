@@ -16,13 +16,23 @@ def predictNumber(image, model):
     return sorted(predictions, reverse=True)[0][1]
 
 
+@app.route("/", methods=['GET'])
+def home():
+    with open("index.html") as file:
+        return file.read()
+
+
+@app.route("/styles.css")
+def get_route():
+    with open("styles.css") as file:
+        return file.read()
+
+
 @app.route('/predict', methods=['POST'])
 def predict():
-   #  with open("new", 'w') as file:
-   #      json.dump(request.json, file)
     image = np.array(request.json)
     image = (image / 255.0).reshape(1, 28, 28, 1)
     return "{}".format(predictNumber(image, model))
 
 
-app.run(debug=True)
+app.run("0.0.0.0", 3000, debug=True)

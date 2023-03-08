@@ -5,7 +5,14 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Document</title>
+		<link
+			rel="stylesheet"
+			href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+		/>
 		<style>
+			body {
+				overflow: hidden;
+			}
 			.grid_node {
 				width: 10px;
 				height: 10px;
@@ -22,21 +29,33 @@
 
 				gap: 50px;
 			}
-			h1 {
+			#prediction {
 				font-size: 300px;
 				line-height: 250px;
 				margin: 0;
 			}
+
+			@media screen and (max-width: 500px) {
+				.flex {
+					display: flex;
+					flex-direction: column;
+				}
+			}
 		</style>
 	</head>
 	<body>
-		<div class="flex">
-			<div id="grid_parent"></div>
-			<h1 id="prediction">-</h1>
+		<!-- <div class="container">
+			<h1>Digit Recognizer</h1>
+		</div> -->
+		<!-- <div class="flex container mt-1"> -->
+		<div id="grid_parent"></div>
+		<h1 id="prediction">-</h1>
+		<!-- </div> -->
+		<div class="container">
+			<button id="submit" class="btn btn-primary">submit</button>
+			<button id="clear" class="btn btn-danger">clear</button>
+			<span id="loader"></span>
 		</div>
-		<button id="submit">submit</button>
-		<button id="clear">clear</button>
-		<span id="loader"></span>
 		<script>
 			const body = document.querySelector("body")
 			const submitButton = document.querySelector("button[id=submit]")
@@ -60,14 +79,27 @@
 						})
 					})
 				}
+
+				static getPos(leftDistance, topDistance) {
+					const pixelSize = 10
+					let col = Math.trunc(leftDistance / 10)
+					let row = Math.trunc(topDistance / 10)
+					return [row, col]
+				}
 				render(renderBody) {
 					const renderB = document.getElementById(renderBody)
 					const container = document.createElement("div")
 					;["mousemove", "touchmove"].forEach((event) => {
 						container.addEventListener(event, (e) => {
 							if (this.recordMovement) {
-								const row = +e.target.getAttribute("row")
-								const col = +e.target.getAttribute("col")
+								const row =
+									event === "mousemove"
+										? +e.target.getAttribute("row")
+										: Grid.getPos(e.touches[0].clientX, e.touches[0].clientY)[0]
+								const col =
+									event === "mousemove"
+										? +e.target.getAttribute("col")
+										: Grid.getPos(e.touches[0].clientX, e.touches[0].clientY)[1]
 								if (row !== null && col !== null) {
 									const node = this.nodes[row][col]
 									node.color = Math.max(0, node.color - 50)
@@ -111,18 +143,17 @@
 											node.htmlNode.style.backgroundColor = `rgb(${node.color}, ${node.color}, ${node.color})`
 										}
 									}
-
 									e.target.style.backgroundColor = `rgb(${node.color}, ${node.color}, ${node.color})`
 								}
 							}
 						})
 					})
-					;[("touchstart", "mousedown")].forEach((event) => {
+					;["touchstart", "mousedown"].forEach((event) => {
 						container.addEventListener(event, () => {
 							this.recordMovement = true
 						})
 					})
-					;[("touchend", "mouseup")].forEach((event) => {
+					;["touchend", "mouseup"].forEach((event) => {
 						window.addEventListener(event, () => {
 							this.recordMovement = false
 						})
@@ -166,9 +197,11 @@
 						col.htmlNode.style.backgroundColor = "white"
 					})
 				})
+
+				output.textContent = "-"
 			})
 			async function predict(imagePixels) {
-				const response = await fetch("http://localhost:5000/predict", {
+				const response = await fetch("/predict", {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
