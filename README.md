@@ -1,1 +1,1 @@
-# digit recognizer
+#letter recognizer
