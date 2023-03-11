@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+		<link
+			rel="stylesheet"
+			href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+		/>
+		<style>
+			body {
+				overflow: hidden;
+			}
+			.grid_node {
+				width: 10px;
+				height: 10px;
+			}
+
+			.grid_body {
+				display: grid;
+				border: black 1px dotted;
+				width: fit-content;
+				cursor: pointer;
+			}
+			.flex {
+				display: flex;
+
+				gap: 50px;
+			}
+			#prediction {
+				font-size: 100px;
+				line-height: 250px;
+				margin: 0;
+			}
+
+			@media screen and (max-width: 500px) {
+				.flex {
+					display: flex;
+					flex-direction: column;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<!-- <div class="container">
+			<h1>Digit Recognizer</h1>
+		</div> -->
+		<!-- <div class="flex container mt-1"> -->
+		<div id="grid_parent"></div>
+		<h1 id="prediction">-</h1>
+		<!-- </div> -->
+		<div class="container">
+			<button id="submit" class="btn btn-primary">submit</button>
+			<button id="clear" class="btn btn-danger">clear</button>
+			<span id="loader"></span>
+		</div>
+		<script>
+			const body = document.querySelector("body")
+			const submitButton = document.querySelector("button[id=submit]")
+			const clearButton = document.querySelector("button[id=clear]")
+
+			class NodeData {
+				constructor() {
+					this.color = 255
+					this.htmlNode = null
+				}
+			}
+			class Grid {
+				constructor(width, height) {
+					this.width = width
+					this.height = height
+					this.pixelSize = 10
+					this.recordMovement = false
+					this.nodes = Array.from({ length: height }, () => {
+						return Array.from({ length: width }, () => {
+							return new NodeData()
+						})
+					})
+				}
+
+				static getPos(leftDistance, topDistance) {
+					const pixelSize = 10
+					let col = Math.trunc(leftDistance / 10)
+					let row = Math.trunc(topDistance / 10)
+					return [row, col]
+				}
+				render(renderBody) {
+					const renderB = document.getElementById(renderBody)
+					const container = document.createElement("div")
+					;["mousemove", "touchmove"].forEach((event) => {
+						container.addEventListener(event, (e) => {
+							if (this.recordMovement) {
+								const row =
+									event === "mousemove"
+										? +e.target.getAttribute("row")
+										: Grid.getPos(e.touches[0].clientX, e.touches[0].clientY)[0]
+								const col =
+									event === "mousemove"
+										? +e.target.getAttribute("col")
+										: Grid.getPos(e.touches[0].clientX, e.touches[0].clientY)[1]
+								if (row !== null && col !== null) {
+									const node = this.nodes[row][col]
+									node.color = Math.max(0, node.color - 50)
+
+									//
+									const topRow = row - 1
+									if (topRow >= 0) {
+										const start = Math.max(0, col - 1)
+										const end = Math.min(col + 2, this.width)
+										for (let i = start; i < end; i++) {
+											const node = this.nodes[topRow][i]
+											if (i === start || i === end - 1) {
+												node.color = Math.max(0, node.color - 10)
+											} else {
+												node.color = Math.max(0, node.color - 30)
+											}
+											node.htmlNode.style.backgroundColor = `rgb(${node.color}, ${node.color}, ${node.color})`
+										}
+									}
+
+									const start = Math.max(0, col - 1)
+									const end = Math.min(col + 2, this.width)
+									for (let i = start; i < end; i++) {
+										const node = this.nodes[row][i]
+
+										node.color = Math.max(0, node.color - 50)
+										node.htmlNode.style.backgroundColor = `rgb(${node.color}, ${node.color}, ${node.color})`
+									}
+
+									const bottomRow = row + 1
+									if (bottomRow < this.height) {
+										const start = Math.max(0, col - 1)
+										const end = Math.min(col + 2, this.width)
+										for (let i = start; i < end; i++) {
+											const node = this.nodes[bottomRow][i]
+											if (i === start || i === end - 1) {
+												node.color = Math.max(0, node.color - 10)
+											} else {
+												node.color = Math.max(0, node.color - 30)
+											}
+											node.htmlNode.style.backgroundColor = `rgb(${node.color}, ${node.color}, ${node.color})`
+										}
+									}
+									e.target.style.backgroundColor = `rgb(${node.color}, ${node.color}, ${node.color})`
+								}
+							}
+						})
+					})
+					;["touchstart", "mousedown"].forEach((event) => {
+						container.addEventListener(event, () => {
+							this.recordMovement = true
+						})
+					})
+					;["touchend", "mouseup"].forEach((event) => {
+						window.addEventListener(event, () => {
+							this.recordMovement = false
+						})
+					})
+
+					for (let i = 0; i < this.nodes.length; i++) {
+						for (let j = 0; j < this.nodes[i].length; j++) {
+							const newHtmlNode = document.createElement("div")
+							const node = this.nodes[i][j]
+							newHtmlNode.style.width = `${this.pixelSize}px`
+							newHtmlNode.style.height = `${this.pixelSize}px`
+							newHtmlNode.setAttribute("row", i)
+							newHtmlNode.setAttribute("col", j)
+							node.htmlNode = newHtmlNode
+							newHtmlNode.style.backgroundColor = `rgb(${node.color}, ${node.color}, ${node.color})`
+							container.appendChild(newHtmlNode)
+						}
+					}
+					container.style.gridTemplateColumns = `repeat(${this.width}, ${this.pixelSize}px)`
+					container.classList.add("grid_body")
+
+					renderB.replaceChildren(container)
+				}
+			}
+
+			const grid = new Grid(28, 28)
+			const output = document.querySelector("#prediction")
+			grid.render("grid_parent")
+			submitButton.addEventListener("click", async () => {
+				const loader = document.querySelector("#loader")
+				loader.textContent = "loading...."
+				const imagePixels = grid.nodes.map((row) => row.map((col) => Math.abs(col.color - 255)))
+				output.textContent = await predict(imagePixels)
+				loader.textContent = ""
+			})
+
+			clearButton.addEventListener("click", () => {
+				grid.nodes.forEach((row) => {
+					row.forEach((col) => {
+						col.color = 255
+						col.htmlNode.style.backgroundColor = "white"
+					})
+				})
+
+				output.textContent = "-"
+			})
+			async function predict(imagePixels) {
+				const response = await fetch("/predict", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(imagePixels),
+				})
+				return await response.text()
+			}
+		</script>
+	</body>
+</html>
